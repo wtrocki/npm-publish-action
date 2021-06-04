@@ -39,7 +39,8 @@ async function main() {
       return console.error("Invalid workspace", dir);
     }
     for (const file of files) {
-      await processDirectory(dirname(file), config, eventObj.commits);
+      console.log("Generating " + dirname(file));
+      processDirectory(dirname(file), config, eventObj.commits);
     }
   } else {
     await processDirectory(dir, config, eventObj.commits);
