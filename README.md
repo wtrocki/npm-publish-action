@@ -1,6 +1,11 @@
 # npm-publish-repo action
 
-GitHub action to automatically publish packages to npm.
+GitHub action to automatically publish your entire workspace to npm.
+
+Action assumes that user has monorepository with multiple packages.
+Action doesn't require user to maintain package versions.
+
+You can simply bump version in root of your monorepository and action will automatically change versions of the packages when publishing.
 
 ## Usage
 
@@ -21,14 +26,14 @@ jobs:
       uses: actions/checkout@v2
     - name: Publish if version has been updated
       uses: pascalgn/npm-publish-action@1.3.8
-      with: # All of theses inputs are optional
+      with: 
+        workspace: "./packages" # Required
+        versionFrom: "."
         tag_name: "v%s"
         tag_message: "v%s"
         create_tag: "true"
         commit_pattern: "^Release (\\S+)"
-        workspace: "."
-        publish_command: "yarn"
-        publish_args: "--non-interactive"
+        publish_args: "--non-interactive --dry-run"
       env: # More info about the environment variables in the README
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Leave this as is, it's automatically generated
         NPM_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }} # You need to set this in your repo settings
@@ -38,17 +43,21 @@ Now, when someone changes the version in `package.json` to 1.2.3 and pushes a co
 
 ### Inputs
 
+## Required
+
+- `workspace`: custom workspace directory that contains folders with multiple `package.json` files
+
+## Optional 
+
 These inputs are optional: that means that if you don't enter them, default values will be used and it'll work just fine.
 
+- `versionFrom`: location of package.json file that will be used to as source for version. Usually root of your monorepo (./)
 - `tag_name`: the name pattern of the new tag
 - `tag_message`: the message pattern of the new tag
 - `create_tag`: whether to create a git tag or not (defaults to `"true"`)
 - `commit_pattern`: pattern that the commit message needs to follow
-- `workspace`: custom workspace directory that contains the `package.json` file
-- `publish_command`: custom publish command (defaults to `yarn`)
 - `publish_args`: publish command arguments (for example `--prod --verbose`, defaults to empty)
 - `recursive`: iterate thru folder to find and publish multiple packages
-
 
 ### Environment variables
 

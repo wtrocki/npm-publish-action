@@ -7,8 +7,13 @@ const { readFile } = require("fs");
 var glob = require("glob");
 
 async function main() {
-  const dir =
-    getEnv("WORKSPACE") || process.env.GITHUB_WORKSPACE || "/github/workspace";
+  const dir = getEnv("WORKSPACE");
+
+  if (!dir) {
+    throw new Error(
+      "Missing workspace for your monorepo packages - usually set to ./packages"
+    );
+  }
 
   const eventFile =
     process.env.GITHUB_EVENT_PATH || "/github/workflow/event.json";
@@ -17,12 +22,16 @@ async function main() {
   const commitPattern =
     getEnv("COMMIT_PATTERN") || "^(?:Release|Version) (\\S+)";
 
+  const versionFrom = getEnv("VERSION_FROM") || ".";
+
   const createTagFlag = getEnv("CREATE_TAG") !== "false";
 
   const publishCommand = getEnv("PUBLISH_COMMAND") || "yarn";
   const publishArgs = arrayEnv("PUBLISH_ARGS");
 
   const { name, email } = eventObj.repository.owner;
+
+  const packagesVersion = getVersion(versionFrom);
 
   const config = {
     commitPattern,
@@ -31,20 +40,34 @@ async function main() {
     tagMessage: placeholderEnv("TAG_MESSAGE", "v%s"),
     tagAuthor: { name, email },
     publishCommand,
-    publishArgs
+    publishArgs,
+    packagesVersion
   };
-  if (getEnv("RECURSIVE")) {
-    const files = glob.sync(join(dir, "/**/package.json"));
-    if (files.length == 0) {
-      return console.error("Invalid workspace", dir);
-    }
-    for (const file of files) {
-      console.log("Generating " + dirname(file));
-      processDirectory(dirname(file), config, eventObj.commits);
-    }
-  } else {
-    await processDirectory(dir, config, eventObj.commits);
+
+  console.log(
+    "Publish all packages in folder and force the same version as root"
+  );
+
+  const foundCommit = checkCommit(config, eventObj.commits);
+
+  const files = glob.sync(join(dir, "/**/package.json"));
+  if (files.length == 0) {
+    return console.error("Invalid workspace: " + dir);
   }
+  for (const file of files) {
+    console.log("Publishing " + dirname(file));
+    await publishPackage(dirname(file), config, config.packagesVersion);
+
+    console.log("Publishing current package done");
+  }
+  if (config.createTag) {
+    console.log("Creating tag: " + packagesVersion);
+    await createTag(dir, config, packagesVersion);
+  }
+
+  setOutput("changed", "true");
+  setOutput("version", version);
+  setOutput("commit", foundCommit.sha);
 }
 
 function getEnv(name) {
@@ -67,7 +90,7 @@ function arrayEnv(name) {
   return str ? str.split(" ") : [];
 }
 
-async function processDirectory(dir, config, commits) {
+async function getVersion(dir) {
   const packageFile = join(dir, "package.json");
   const packageObj = await readJson(packageFile).catch(() =>
     Promise.reject(
@@ -80,31 +103,20 @@ async function processDirectory(dir, config, commits) {
   }
 
   const { version } = packageObj;
-
-  const foundCommit = checkCommit(config, commits, version);
-
-  if (config.createTag) {
-    await createTag(dir, config, version);
-  }
-
-  await publishPackage(dir, config, version);
-
-  setOutput("changed", "true");
-  setOutput("version", version);
-  setOutput("commit", foundCommit.sha);
-
-  console.log("Done.");
+  return version;
 }
 
-function checkCommit(config, commits, version) {
+function checkCommit(config, commits) {
   for (const commit of commits) {
     const match = commit.message.match(config.commitPattern);
-    if (match && match[1] === version) {
+    if (match && match[1] === config.packagesVersion) {
       console.log(`Found commit: ${commit.message}`);
       return commit;
     }
   }
-  throw new NeutralExitError(`No commit found for version: ${version}`);
+  throw new NeutralExitError(
+    `No commit found for version: ${config.packagesVersion}`
+  );
 }
 
 async function readJson(file) {
@@ -151,18 +163,19 @@ async function createTag(dir, config, version) {
 }
 
 async function publishPackage(dir, config, version) {
-  const { publishCommand, publishArgs } = config;
+  const { publishArgs } = config;
 
-  const cmd =
-    publishCommand === "yarn"
-      ? ["yarn", "publish", "--non-interactive", "--new-version", version]
-      : publishCommand === "npm"
-      ? ["npm", "publish"]
-      : [publishCommand];
+  const cmd = [
+    "yarn",
+    "publish",
+    "--non-interactive",
+    "--new-version",
+    version
+  ];
 
   await run(dir, ...cmd, ...publishArgs);
 
-  console.log("Version has been published successfully:", version);
+  console.log("Version has been published successfully:", version, dir);
 }
 
 function setOutput(name, value = "") {
