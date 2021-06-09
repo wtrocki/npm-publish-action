@@ -1,4 +1,6 @@
-# npm-publish-repo action
+# npm-publish-action-monorepo
+
+Based off: https://github.com/pascalgn/npm-publish-action
 
 GitHub action to automatically publish your entire workspace to npm.
 
