@@ -31,7 +31,7 @@ async function main() {
 
   const { name, email } = eventObj.repository.owner;
 
-  const packagesVersion = getVersion(versionFrom);
+  const packagesVersion = await getVersion(versionFrom);
 
   const config = {
     commitPattern,
@@ -44,7 +44,7 @@ async function main() {
     packagesVersion
   };
 
-  console.log("Checking commits");
+  console.log("Init release with config", config);
 
   const foundCommit = checkCommit(config, eventObj.commits);
 
@@ -109,9 +109,16 @@ async function getVersion(dir) {
 function checkCommit(config, commits) {
   for (const commit of commits) {
     const match = commit.message.match(config.commitPattern);
-    if (match && match[1] === config.packagesVersion) {
-      console.log(`Found commit: ${commit.message}`);
-      return commit;
+    if (match && match[1]) {
+      console.log(`Found release commit: ${commit.message}`);
+      if (match[1] === config.packagesVersion) {
+        return commit;
+      } else {
+        console.log(
+          `Release commit doesn't match current version: 
+           ${match[1]} != ${config.packagesVersion}`
+        );
+      }
     }
   }
   console.log(`No release commit found in : ${JSON.stringify(commits)}`);
