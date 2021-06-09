@@ -2,11 +2,11 @@
   "name": "npm-publish-monorepo-action",
   "version": "0.0.1",
   "description": "GitHub action to automatically publish packages to npm",
-  "author": "Pascal",
+  "author": "Wojciech Trocki",
   "license": "MIT",
   "private": true,
   "bin": {
-    "npm-publish-action": "./index.js"
+    "npm-publish-monorepo-action": "./index.js"
   },
   "scripts": {
     "lint": "eslint ."

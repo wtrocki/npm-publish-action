@@ -25,14 +25,14 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v2
     - name: Publish if version has been updated
-      uses: pascalgn/npm-publish-action@1.3.8
+      uses: wtrocki/npm-publish-monorepo-action@2.0.0
       with: 
         workspace: "./packages" # Required
         versionFrom: "."
         tag_name: "v%s"
         tag_message: "v%s"
         create_tag: "true"
-        commit_pattern: "^Release (\\S+)"
+        commit_pattern: "^chore: Release (\\S+)"
         publish_args: "--non-interactive --dry-run"
       env: # More info about the environment variables in the README
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Leave this as is, it's automatically generated

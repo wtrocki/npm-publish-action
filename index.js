@@ -44,11 +44,11 @@ async function main() {
     packagesVersion
   };
 
-  console.log(
-    "Publish all packages in folder and force the same version as root"
-  );
+  console.log("Checking commits");
 
   const foundCommit = checkCommit(config, eventObj.commits);
+
+  console.log("Publish all packages in folder");
 
   const files = glob.sync(join(dir, "/**/package.json"));
   if (files.length == 0) {
@@ -66,7 +66,7 @@ async function main() {
   }
 
   setOutput("changed", "true");
-  setOutput("version", version);
+  setOutput("version", packagesVersion);
   setOutput("commit", foundCommit.sha);
 }
 
