@@ -114,8 +114,8 @@ function checkCommit(config, commits) {
       return commit;
     }
   }
-  console.log(`No release commit found in : ${commits}`);
-  
+  console.log(`No release commit found in : ${JSON.stringify(commits)}`);
+
   throw new NeutralExitError(
     `No commit found for version: ${config.packagesVersion}`
   );
