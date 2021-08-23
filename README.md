@@ -27,7 +27,7 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v2
     - name: Publish if version has been updated
-      uses: wtrocki/npm-publish-monorepo-action@2.0.0
+      uses: wtrocki/npm-publish-action-monorepo@2.0.0
       with: 
         workspace: "./packages" # Required
         versionFrom: "."
